@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+	PROJECT_NAME = '8.2CDevSecOps'
         EMAIL_RECIPIENTS = "garganmol233@gmail.com"  // <-- replace with your email
     }
 
