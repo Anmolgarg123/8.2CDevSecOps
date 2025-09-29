@@ -4,6 +4,7 @@ pipeline {
     environment {
         PROJECT_NAME = '8.2CDevSecOps'
         EMAIL_RECIPIENTS = "garganmol233@gmail.com"
+        CONSOLE_LOG = "${env.WORKSPACE}\\console-log.txt"
     }
 
     stages {
@@ -15,7 +16,7 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                bat 'npm install || exit /b 0'
+                bat 'npm install'
             }
         }
 
@@ -40,17 +41,27 @@ pipeline {
 
     post {
         always {
-            // Capture all .log files into console-log.txt (PowerShell compatible)
-            bat '''
-            powershell -Command "Get-ChildItem -Path $env:WORKSPACE -Recurse -Filter *.log | ForEach-Object { Get-Content $_ } | Out-File $env:WORKSPACE\\console-log.txt -Encoding UTF8"
-            '''
+            // Generate console log by dumping the Jenkins output
+            bat """
+                @echo off
+                powershell -Command "Get-Content '$env:WORKSPACE\\**\\*.log' | Out-File '$env:WORKSPACE\\console-log.txt' -Encoding UTF8"
+            """
 
-            // Send email with console log attached
+            // Check if the file exists
+            script {
+                if (fileExists(env.CONSOLE_LOG)) {
+                    echo "Console log file exists: ${env.CONSOLE_LOG}"
+                } else {
+                    echo "Console log file does NOT exist!"
+                }
+            }
+
+            // Send email with the console log attached (if exists)
             emailext(
                 subject: "${PROJECT_NAME} - Build #${BUILD_NUMBER} - ${currentBuild.currentResult}",
-                body: "The pipeline has completed. Please find the console log attached.",
+                body: "Pipeline finished. Console log attached if available.",
                 to: "${EMAIL_RECIPIENTS}",
-                attachmentsPattern: "console-log.txt"
+                attachmentsPattern: fileExists(env.CONSOLE_LOG) ? 'console-log.txt' : ''
             )
         }
     }
