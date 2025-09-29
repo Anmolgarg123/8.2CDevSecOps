@@ -53,13 +53,24 @@ pipeline {
 
     post {
         always {
-            // Email with workspace-relative file pattern
-            emailext(
-                subject: "${env.JOB_NAME} - Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
-                body: "Pipeline finished. See attached console log for details.",
-                to: "${EMAIL_RECIPIENTS}",
-                attachmentsPattern: "**/${CONSOLE_LOG}" // <-- fixed
-            )
+        // Make sure the console log is available as a workspace file
+        script {
+            // This ensures Jenkins sees the file
+            def logFile = "${env.WORKSPACE}/console-log.txt"
+            if (fileExists(logFile)) {
+                echo "Console log exists: ${logFile}"
+            } else {
+                echo "Console log not found! Creating empty file to attach..."
+                writeFile file: 'console-log.txt', text: 'No log available.'
+            }
         }
+
+        emailext(
+            subject: "${env.JOB_NAME} - Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
+            body: "Pipeline finished. See attached console log for details.",
+            to: "${EMAIL_RECIPIENTS}",
+            attachmentsPattern: "console-log.txt"  // Workspace-relative, no glob needed
+        )
+    }
     }
 }
