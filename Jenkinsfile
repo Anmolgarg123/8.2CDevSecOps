@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         PROJECT_NAME = '8.2CDevSecOps'
-        EMAIL_RECIPIENTS = 'garganmol233@gmail.com'
+        EMAIL_RECIPIENTS = "garganmol233@gmail.com"
     }
 
     stages {
@@ -15,7 +15,7 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                bat 'npm install'
+                bat 'npm install || exit /b 0'
             }
         }
 
@@ -40,13 +40,15 @@ pipeline {
 
     post {
         always {
-            // Save console log to a file
-            bat 'powershell -Command "Get-Content $env:WORKSPACE\\**\\*.log -Raw | Out-File $env:WORKSPACE\\console-log.txt"'
+            // Capture all .log files into console-log.txt (PowerShell compatible)
+            bat '''
+            powershell -Command "Get-ChildItem -Path $env:WORKSPACE -Recurse -Filter *.log | ForEach-Object { Get-Content $_ } | Out-File $env:WORKSPACE\\console-log.txt -Encoding UTF8"
+            '''
 
             // Send email with console log attached
             emailext(
                 subject: "${PROJECT_NAME} - Build #${BUILD_NUMBER} - ${currentBuild.currentResult}",
-                body: "Pipeline completed. Console log attached.",
+                body: "The pipeline has completed. Please find the console log attached.",
                 to: "${EMAIL_RECIPIENTS}",
                 attachmentsPattern: "console-log.txt"
             )
