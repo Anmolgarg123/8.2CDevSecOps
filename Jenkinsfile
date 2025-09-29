@@ -3,8 +3,7 @@ pipeline {
 
     environment {
         PROJECT_NAME = '8.2CDevSecOps'
-        EMAIL_RECIPIENTS = "garganmol233@gmail.com"
-        CONSOLE_LOG = 'console-log.txt'
+        EMAIL_RECIPIENTS = 'garganmol233@gmail.com'
     }
 
     stages {
@@ -16,44 +15,40 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                bat "npm install > ${env.CONSOLE_LOG} 2>&1"
+                bat 'npm install'
             }
         }
 
         stage('Run Tests') {
             steps {
-                bat "npm test >> ${env.CONSOLE_LOG} 2>&1 || exit /b 0"
+                bat 'npm test || exit /b 0'
             }
         }
 
         stage('Generate Coverage Report') {
             steps {
-                bat "npm run coverage >> ${env.CONSOLE_LOG} 2>&1 || exit /b 0"
+                bat 'npm run coverage || exit /b 0'
             }
         }
 
         stage('NPM Audit (Security Scan)') {
             steps {
-                bat "npm audit >> ${env.CONSOLE_LOG} 2>&1 || exit /b 0"
+                bat 'npm audit || exit /b 0'
             }
         }
     }
 
     post {
         always {
+            // Save console log to a file
+            bat 'powershell -Command "Get-Content $env:WORKSPACE\\**\\*.log -Raw | Out-File $env:WORKSPACE\\console-log.txt"'
+
             // Send email with console log attached
             emailext(
                 subject: "${PROJECT_NAME} - Build #${BUILD_NUMBER} - ${currentBuild.currentResult}",
-                body: """Hello,
-
-The Jenkins pipeline for project '${PROJECT_NAME}' has completed.
-
-Build Number: ${BUILD_NUMBER}
-Status: ${currentBuild.currentResult}
-
-Please find the attached console log for details.""",
-                to: env.EMAIL_RECIPIENTS,
-                attachmentsPattern: env.CONSOLE_LOG
+                body: "Pipeline completed. Console log attached.",
+                to: "${EMAIL_RECIPIENTS}",
+                attachmentsPattern: "console-log.txt"
             )
         }
     }
