@@ -16,33 +16,32 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                // Capture output to log file
-                bat "npm install | tee ${env.CONSOLE_LOG}"
+                bat "npm install > ${env.CONSOLE_LOG} 2>&1"
             }
         }
 
         stage('Run Tests') {
             steps {
-                bat "npm test || exit /b 0 | tee -a ${env.CONSOLE_LOG}"
+                bat "npm test >> ${env.CONSOLE_LOG} 2>&1 || exit /b 0"
             }
         }
 
         stage('Generate Coverage Report') {
             steps {
-                bat "npm run coverage || exit /b 0 | tee -a ${env.CONSOLE_LOG}"
+                bat "npm run coverage >> ${env.CONSOLE_LOG} 2>&1 || exit /b 0"
             }
         }
 
         stage('NPM Audit (Security Scan)') {
             steps {
-                bat "npm audit || exit /b 0 | tee -a ${env.CONSOLE_LOG}"
+                bat "npm audit >> ${env.CONSOLE_LOG} 2>&1 || exit /b 0"
             }
         }
     }
 
     post {
         always {
-            // Attach the captured console log to email
+            // Send email with console log attached
             emailext(
                 subject: "${PROJECT_NAME} - Build #${BUILD_NUMBER} - ${currentBuild.currentResult}",
                 body: """Hello,
