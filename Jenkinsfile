@@ -4,7 +4,7 @@ pipeline {
     environment {
         PROJECT_NAME = '8.2CDevSecOps'
         EMAIL_RECIPIENTS = "garganmol233@gmail.com"
-        CONSOLE_LOG = "${env.WORKSPACE}\\console-log.txt"
+        CONSOLE_LOG = "${WORKSPACE}\\console-log.txt"
     }
 
     stages {
@@ -41,10 +41,11 @@ pipeline {
 
     post {
         always {
-            // Generate console log by dumping the Jenkins output
+            // Collect all .log files into console-log.txt
             bat """
                 @echo off
-                powershell -Command "Get-Content '$env:WORKSPACE\\**\\*.log' | Out-File '$env:WORKSPACE\\console-log.txt' -Encoding UTF8"
+                if exist "${WORKSPACE}\\console-log.txt" del "${WORKSPACE}\\console-log.txt"
+                for /r "%WORKSPACE%" %%f in (*.log) do type "%%f" >> "${WORKSPACE}\\console-log.txt"
             """
 
             // Check if the file exists
