@@ -58,7 +58,7 @@ pipeline {
                 subject: "${env.JOB_NAME} - Build #${env.BUILD_NUMBER} - ${currentBuild.currentResult}",
                 body: "Pipeline finished. See attached console log for details.",
                 to: "${EMAIL_RECIPIENTS}",
-                attachmentsPattern: "${CONSOLE_LOG}"
+                attachmentsPattern: "**/${CONSOLE_LOG}" // <-- fixed
             )
         }
     }
