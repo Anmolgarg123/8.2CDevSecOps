@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         CONSOLE_LOG = "console-log.txt"
-        SNYK_REPORT = "snyk-report.json"
         EMAIL_RECIPIENTS = "garganmol233@gmail.com"
     }
 
@@ -42,32 +41,45 @@ pipeline {
             }
         }
 
-        stage('Snyk Security Scan') {
+        stage('NPM Audit (Security Scan)') {
             steps {
                 bat """
-                echo ===== Snyk Security Scan ===== >> %CONSOLE_LOG%
-                snyk test --json > %SNYK_REPORT% 2>&1 || exit /b 0
-                type %SNYK_REPORT% >> %CONSOLE_LOG%
+                echo ===== Security Scan ===== >> %CONSOLE_LOG%
+                npm audit >> %CONSOLE_LOG% 2>&1 || exit /b 0
                 """
             }
         }
 
+        stage('Snyk Security Scan') {
+            steps {
+                bat """
+                echo ===== Snyk Scan ===== >> %CONSOLE_LOG%
+                snyk test >> %CONSOLE_LOG% 2>&1 || exit /b 0
+                """
+            }
+        }
     }
 
     post {
         always {
+            // Show workspace and log for debug
             script {
                 echo "Workspace path: ${env.WORKSPACE}"
                 bat "dir ${env.WORKSPACE}"
-                bat "type ${env.WORKSPACE}\\console-log.txt || echo File not found"
+                bat "type ${env.WORKSPACE}\\${CONSOLE_LOG} || echo File not found"
             }
 
+            // Send email with only console-log.txt attached
             emailext(
-                subject: "Jenkins Build & Snyk Report",
-                body: "Pipeline finished. Attached are the console log and Snyk report.",
+                subject: "Pipeline Finished - Console Log Attached",
+                body: """Hello,
+
+The Jenkins pipeline has finished. Please find attached the console log containing all outputs from checkout, npm install, tests, coverage, and security scans.
+
+Regards,
+Jenkins""",
                 to: "${EMAIL_RECIPIENTS}",
-                attachmentsPattern: "console-log.txt, snyk-report.json",
-                mimeType: 'text/plain'
+                attachmentsPattern: "${env.WORKSPACE}\\${CONSOLE_LOG}"
             )
         }
     }
