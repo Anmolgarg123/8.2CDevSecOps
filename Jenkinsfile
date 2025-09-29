@@ -10,72 +10,48 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo "Tool: Git"
+                echo "===== Checkout =====" >> "${CONSOLE_LOG}"
                 git branch: 'main', url: 'https://github.com/Anmolgarg123/8.2CDevSecOps.git'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                echo "Tool: npm"
+                echo "===== Install Dependencies =====" >> "${CONSOLE_LOG}"
                 bat """
                 @echo off
-                echo ===== Install Dependencies ===== > console-log.txt
-                npm install >> console-log.txt 2>&1
+                npm install >> ${CONSOLE_LOG} 2>&1
                 """
             }
         }
 
         stage('Run Tests') {
             steps {
-                echo "Tool: npm test"
+                echo "===== Run Tests =====" >> "${CONSOLE_LOG}"
                 bat """
                 @echo off
-                echo ===== Run Tests ===== >> console-log.txt
-                npm test || exit /b 0 >> console-log.txt 2>&1
+                npm test || exit /b 0 >> ${CONSOLE_LOG} 2>&1
                 """
-            }
-            post {
-                always {
-                    emailext(
-                        subject: "${PROJECT_NAME} - Run Tests Stage - ${currentBuild.currentResult}",
-                        body: "Run Tests stage finished. See attached log.",
-                        to: "${EMAIL_RECIPIENTS}",
-                        attachmentsPattern: 'console-log.txt'
-                    )
-                }
             }
         }
 
         stage('Generate Coverage Report') {
             steps {
-                echo "Tool: npm run coverage"
+                echo "===== Coverage Report =====" >> "${CONSOLE_LOG}"
                 bat """
                 @echo off
-                echo ===== Coverage Report ===== >> console-log.txt
-                npm run coverage || exit /b 0 >> console-log.txt 2>&1
+                npm run coverage || exit /b 0 >> ${CONSOLE_LOG} 2>&1
                 """
             }
         }
 
         stage('NPM Audit (Security Scan)') {
             steps {
-                echo "Tool: npm audit"
+                echo "===== Security Scan =====" >> "${CONSOLE_LOG}"
                 bat """
                 @echo off
-                echo ===== Security Scan ===== >> console-log.txt
-                npm audit || exit /b 0 >> console-log.txt 2>&1
+                npm audit || exit /b 0 >> ${CONSOLE_LOG} 2>&1
                 """
-            }
-            post {
-                always {
-                    emailext(
-                        subject: "${PROJECT_NAME} - Security Scan Stage - ${currentBuild.currentResult}",
-                        body: "Security Scan stage finished. See attached log.",
-                        to: "${EMAIL_RECIPIENTS}",
-                        attachmentsPattern: 'console-log.txt'
-                    )
-                }
             }
         }
     }
@@ -83,6 +59,14 @@ pipeline {
     post {
         always {
             echo "Pipeline finished for build #${BUILD_NUMBER}"
+
+            // Send email with attachment
+            emailext(
+                subject: "${PROJECT_NAME} - Build #${BUILD_NUMBER} - ${currentBuild.currentResult}",
+                body: "Pipeline finished. See attached console log for details.",
+                to: "${EMAIL_RECIPIENTS}",
+                attachmentsPattern: "${CONSOLE_LOG}"
+            )
         }
     }
 }
