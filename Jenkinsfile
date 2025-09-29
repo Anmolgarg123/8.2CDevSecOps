@@ -4,6 +4,7 @@ pipeline {
     environment {
         PROJECT_NAME = '8.2CDevSecOps'
         EMAIL_RECIPIENTS = "garganmol233@gmail.com"
+        CONSOLE_LOG = 'console-log.txt'
     }
 
     stages {
@@ -40,18 +41,24 @@ pipeline {
 
     post {
         always {
-            // Save console log to a file
-            bat 'powershell -Command "Get-Content JenkinsBuildLog.txt -Raw | Out-File console-log.txt" || echo console-log.txt created'
-            
-            // Alternative: Jenkins built-in console log capture
-            writeFile file: 'console-log.txt', text: currentBuild.rawBuild.getLog(1000).join("\r\n")
+            script {
+                // Capture console log and save to file
+                writeFile file: env.CONSOLE_LOG, text: currentBuild.rawBuild.getLog(2000).join("\r\n")
+            }
 
             // Send email with console log attached
             emailext(
-                subject: "$PROJECT_NAME - Build # $BUILD_NUMBER - ${currentBuild.currentResult}",
-                body: "The pipeline has completed. Please find the console log attached.",
-                to: "${EMAIL_RECIPIENTS}",
-                attachmentsPattern: "console-log.txt"
+                subject: "${PROJECT_NAME} - Build #${BUILD_NUMBER} - ${currentBuild.currentResult}",
+                body: """Hello,
+
+The Jenkins pipeline for project '${PROJECT_NAME}' has completed.
+
+Build Number: ${BUILD_NUMBER}
+Status: ${currentBuild.currentResult}
+
+Please find the attached console log for details.""",
+                to: env.EMAIL_RECIPIENTS,
+                attachmentsPattern: env.CONSOLE_LOG
             )
         }
     }
