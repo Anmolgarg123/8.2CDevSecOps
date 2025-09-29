@@ -18,22 +18,25 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 echo "Tool: npm"
-                bat 'npm install'
+                bat """
+                @echo off
+                echo ===== Install Dependencies ===== > console-log.txt
+                npm install >> console-log.txt 2>&1
+                """
             }
         }
 
         stage('Run Tests') {
             steps {
                 echo "Tool: npm test"
-                bat 'npm test || exit /b 0'
+                bat """
+                @echo off
+                echo ===== Run Tests ===== >> console-log.txt
+                npm test || exit /b 0 >> console-log.txt 2>&1
+                """
             }
             post {
                 always {
-                    script {
-                        // Capture Jenkins console output into a file
-                        writeFile file: "${CONSOLE_LOG}", text: currentBuild.rawBuild.getLog(1000).join('\n')
-                    }
-                    // Send email with attachment
                     emailext(
                         subject: "${PROJECT_NAME} - Run Tests Stage - ${currentBuild.currentResult}",
                         body: "Run Tests stage finished. See attached log.",
@@ -47,22 +50,25 @@ pipeline {
         stage('Generate Coverage Report') {
             steps {
                 echo "Tool: npm run coverage"
-                bat 'npm run coverage || exit /b 0'
+                bat """
+                @echo off
+                echo ===== Coverage Report ===== >> console-log.txt
+                npm run coverage || exit /b 0 >> console-log.txt 2>&1
+                """
             }
         }
 
         stage('NPM Audit (Security Scan)') {
             steps {
-                echo "Tool: npm audit (Security Scan)"
-                bat 'npm audit || exit /b 0'
+                echo "Tool: npm audit"
+                bat """
+                @echo off
+                echo ===== Security Scan ===== >> console-log.txt
+                npm audit || exit /b 0 >> console-log.txt 2>&1
+                """
             }
             post {
                 always {
-                    script {
-                        // Capture Jenkins console output into a file
-                        writeFile file: "${CONSOLE_LOG}", text: currentBuild.rawBuild.getLog(1000).join('\n')
-                    }
-                    // Send email with attachment
                     emailext(
                         subject: "${PROJECT_NAME} - Security Scan Stage - ${currentBuild.currentResult}",
                         body: "Security Scan stage finished. See attached log.",
