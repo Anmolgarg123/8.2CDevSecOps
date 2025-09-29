@@ -4,7 +4,7 @@ pipeline {
     environment {
         PROJECT_NAME = '8.2CDevSecOps'
         EMAIL_RECIPIENTS = "garganmol233@gmail.com"
-        WORKSPACE_LOG = "${WORKSPACE}\\console-log.txt"
+        CONSOLE_LOG = "${WORKSPACE}/console-log.txt"
     }
 
     stages {
@@ -29,12 +29,11 @@ pipeline {
             }
             post {
                 always {
-                    // Capture stage output into a log
-                    bat """
-                        @echo off
-                        echo ===== Run Tests Stage Log ===== > "${WORKSPACE_LOG}"
-                        for /r "%WORKSPACE%" %%f in (*.log) do type "%%f" >> "${WORKSPACE_LOG}"
-                    """
+                    script {
+                        // Capture Jenkins console output into a file
+                        writeFile file: "${CONSOLE_LOG}", text: currentBuild.rawBuild.getLog(1000).join('\n')
+                    }
+                    // Send email with attachment
                     emailext(
                         subject: "${PROJECT_NAME} - Run Tests Stage - ${currentBuild.currentResult}",
                         body: "Run Tests stage finished. See attached log.",
@@ -54,17 +53,16 @@ pipeline {
 
         stage('NPM Audit (Security Scan)') {
             steps {
-                echo "Tool: npm audit (Snyk optional)"
+                echo "Tool: npm audit (Security Scan)"
                 bat 'npm audit || exit /b 0'
             }
             post {
                 always {
-                    // Capture security scan log
-                    bat """
-                        @echo off
-                        echo ===== Security Scan Stage Log ===== > "${WORKSPACE_LOG}"
-                        for /r "%WORKSPACE%" %%f in (*.log) do type "%%f" >> "${WORKSPACE_LOG}"
-                    """
+                    script {
+                        // Capture Jenkins console output into a file
+                        writeFile file: "${CONSOLE_LOG}", text: currentBuild.rawBuild.getLog(1000).join('\n')
+                    }
+                    // Send email with attachment
                     emailext(
                         subject: "${PROJECT_NAME} - Security Scan Stage - ${currentBuild.currentResult}",
                         body: "Security Scan stage finished. See attached log.",
