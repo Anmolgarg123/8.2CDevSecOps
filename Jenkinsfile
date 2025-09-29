@@ -35,9 +35,7 @@ pipeline {
 
         stage('Generate Coverage Report') {
             steps {
-                bat """
-                echo ===== Coverage Report ===== >> %CONSOLE_LOG%
-                """
+                bat "echo ===== Coverage Report ===== >> %CONSOLE_LOG%"
             }
         }
 
@@ -62,14 +60,14 @@ pipeline {
 
     post {
         always {
-            // Show workspace and log for debug
+            // Debug: show workspace and log file
             script {
                 echo "Workspace path: ${env.WORKSPACE}"
-                bat "dir ${env.WORKSPACE}"
-                bat "type ${env.WORKSPACE}\\${CONSOLE_LOG} || echo File not found"
+                bat "dir"
+                bat "type %CONSOLE_LOG% || echo File not found"
             }
 
-            // Send email with only console-log.txt attached
+            // Send email with console-log.txt attached
             emailext(
                 subject: "Pipeline Finished - Console Log Attached",
                 body: """Hello,
@@ -79,7 +77,7 @@ The Jenkins pipeline has finished. Please find attached the console log containi
 Regards,
 Jenkins""",
                 to: "${EMAIL_RECIPIENTS}",
-                attachmentsPattern: "${env.WORKSPACE}\\${CONSOLE_LOG}"
+                attachmentsPattern: "${CONSOLE_LOG}"
             )
         }
     }
